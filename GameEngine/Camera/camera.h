@@ -37,5 +37,11 @@ class Camera
 
 		void rotateOx(float angle);
 		void rotateOy(float angle);
+
+		//s1
+		void setCameraPosition(const glm::vec3& position);
+
+
+
 };
 

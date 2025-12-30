@@ -42,15 +42,17 @@ void Camera::keyboardMoveBack(float cameraSpeed)
 	cameraPosition -= cameraViewDirection * cameraSpeed;
 }
 
+//s1 implemented!
 void Camera::keyboardMoveLeft(float cameraSpeed)
 {
-	//task
+	cameraPosition -= cameraRight * cameraSpeed;
 }
 
 void Camera::keyboardMoveRight(float cameraSpeed)
 {
-	//task
+	cameraPosition += cameraRight * cameraSpeed;
 }
+
 
 void Camera::keyboardMoveUp(float cameraSpeed)
 {
@@ -64,15 +66,44 @@ void Camera::keyboardMoveDown(float cameraSpeed)
 
 void Camera::rotateOx(float angle)
 {	
-	cameraViewDirection = glm::normalize(glm::vec3((glm::rotate(glm::mat4(1.0f), angle, cameraRight) * glm::vec4(cameraViewDirection, 1))));
+	/*cameraViewDirection = glm::normalize(glm::vec3((glm::rotate(glm::mat4(1.0f), angle, cameraRight) * glm::vec4(cameraViewDirection, 1))));
 	cameraUp = glm::normalize(glm::cross(cameraRight, cameraViewDirection));
-	cameraRight = glm::cross(cameraViewDirection, cameraUp);
+	cameraRight = glm::cross(cameraViewDirection, cameraUp);*/
+	//s1 new implementation to go along with rotateOy
+    rotationOx += angle;
+
+    // clamp pitch to avoid flipping
+    if (rotationOx > 89.0f)
+        rotationOx = 89.0f;
+    if (rotationOx < -89.0f)
+        rotationOx = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(rotationOy)) * cos(glm::radians(rotationOx));
+    direction.y = sin(glm::radians(rotationOx));
+    direction.z = sin(glm::radians(rotationOy)) * cos(glm::radians(rotationOx));
+
+    cameraViewDirection = glm::normalize(direction);
+    cameraRight = glm::normalize(glm::cross(cameraViewDirection, glm::vec3(0.0f, 1.0f, 0.0f)));
+    cameraUp = glm::normalize(glm::cross(cameraRight, cameraViewDirection));
 }
 
-void Camera::rotateOy (float angle)
+//s1 implemented!
+void Camera::rotateOy(float angle)
 {
-	//task
+	rotationOy -= angle;
+
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(rotationOy)) * cos(glm::radians(rotationOx));
+	direction.y = sin(glm::radians(rotationOx));
+	direction.z = sin(glm::radians(rotationOy)) * cos(glm::radians(rotationOx));
+
+	cameraViewDirection = glm::normalize(direction);
+	cameraRight = glm::normalize(glm::cross(cameraViewDirection, glm::vec3(0.0f, 1.0f, 0.0f)));
+	cameraUp = glm::normalize(glm::cross(cameraRight, cameraViewDirection));
 }
+
+
 
 glm::mat4 Camera::getViewMatrix()
 {
@@ -93,5 +124,12 @@ glm::vec3 Camera::getCameraUp()
 {
 	return cameraUp;
 }
+
+//s1
+void Camera::setCameraPosition(const glm::vec3& position)
+{
+	cameraPosition = position;
+}
+
 
 
