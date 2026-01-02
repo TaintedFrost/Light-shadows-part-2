@@ -1,0 +1,10 @@
+﻿  main.cpp
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(486,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(498,12): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(499,12): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(503,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(504,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(506,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(507,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\GameEngine\main.cpp(801,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  GameEngine.vcxproj -> C:\Users\Soby\Desktop\!!!!AGC part2\GameEngine2025\GameEngine\Debug\GameEngine.exe
