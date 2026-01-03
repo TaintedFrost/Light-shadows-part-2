@@ -1,0 +1,17 @@
+# Visual Studio
+.vs/
+*.user
+
+# Build output
+Debug/
+Release/
+x64/
+
+# Compiled files
+*.exe
+*.pdb
+*.ilk
+*.obj
+*.log
+*.tlog
+*.idb
