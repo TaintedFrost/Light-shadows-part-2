@@ -6,7 +6,7 @@
 #include "Model Loading\meshLoaderObj.h"
 #include <time.h>
 
-void processKeyboardInput ();
+void processKeyboardInput();
 
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
@@ -16,6 +16,25 @@ Camera camera;
 
 glm::vec3 lightColor = glm::vec3(1.0f);
 glm::vec3 lightPos = glm::vec3(-180.0f, 100.0f, -200.0f);
+
+
+//s3 task2
+enum class GameState
+{
+	WORLD,
+	SIMON_INTRO,
+	SIMON_SHOW,
+	SIMON_INPUT,
+	SIMON_SUCCESS,
+	SIMON_FAIL
+};
+GameState gameState = GameState::WORLD;
+
+glm::vec3 memoryTilePos = glm::vec3(20.0f, 0.0f, 10.0f);
+float memoryTileRadius = 4.0f;
+bool task2Completed = false;
+
+
 
 //s1 enemy
 glm::vec3 enemyPos = glm::vec3(-10.0f, 0.0f, 0.0f);// midde irelevent
@@ -253,7 +272,7 @@ unsigned char* loadBMPPixels(const char* imagepath, unsigned int& width, unsigne
 
 
 
- 
+
 GLuint loadCubemap(const std::vector<std::string>& faces)
 {
 	GLuint textureID;
@@ -296,34 +315,126 @@ GLuint loadCubemap(const std::vector<std::string>& faces)
 	return textureID;
 }
 
-struct WizardPart {
-	glm::vec3 offset;   // relative to enemyPos
-	glm::vec3 scale;    // cube scale
+struct WizardPart
+{
+	glm::vec3 offset;
+	glm::vec3 scale;
+	GLuint texture;
 };
 
 
-
-std::vector<WizardPart> getWizardParts()
+// ---------- Sword parts (procedural model) ----------
+struct SwordPart
 {
-	std::vector<WizardPart> parts;
+	glm::vec3 offset;
+	glm::vec3 scale;
+	GLuint textureID;
+};
 
-	// Hat (purple)
-	parts.push_back({ glm::vec3(0.0f, 2.25f, 0.0f), glm::vec3(1.0f, 0.5f, 1.0f) });
+std::vector<SwordPart> getSwordParts(
+	GLuint bladeTex,
+	GLuint guardTex,
+	GLuint handleTex,
+	GLuint pommelTex
+)
+{
+	std::vector<SwordPart> parts;
 
-	// Head (skin color)
-	parts.push_back({ glm::vec3(0.0f, 1.25f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f) });
+	// Blade
+	parts.push_back({
+		glm::vec3(0.0f, 6.0f, 0.0f),
+		glm::vec3(0.4f, 8.0f, 0.2f),
+		bladeTex
+		});
 
-	// Body (purple)
-	parts.push_back({ glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.5f, 0.5f) });
+	// Guard
+	parts.push_back({
+		glm::vec3(0.0f, 2.0f, 0.0f),
+		glm::vec3(2.0f, 0.3f, 0.5f),
+		guardTex
+		});
 
-	// Left leg (dark purple)
-	parts.push_back({ glm::vec3(-0.25f, -1.25f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f) });
+	// Handle
+	parts.push_back({
+		glm::vec3(0.0f, -1.5f, 0.0f),
+		glm::vec3(0.3f, 3.0f, 0.3f),
+		handleTex
+		});
 
-	// Right leg (dark purple)
-	parts.push_back({ glm::vec3(0.25f, -1.25f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f) });
+	// Pommel
+	parts.push_back({
+		glm::vec3(0.0f, -3.2f, 0.0f),
+		glm::vec3(0.6f, 0.6f, 0.6f),
+		pommelTex
+		});
 
 	return parts;
 }
+
+
+
+
+std::vector<WizardPart> getWizardParts(
+	GLuint robeTex,
+	GLuint skinTex,
+	GLuint hatTex,
+	GLuint staffTex
+)
+{
+	std::vector<WizardPart> parts;
+
+	// ===== ROBE BODY (tall + tapered look) =====
+	parts.push_back({
+		glm::vec3(0.0f, 1.5f, 0.0f),
+		glm::vec3(1.5f, 2.3f, 0.9f),
+		robeTex
+		});
+
+	// ===== HEAD =====
+	parts.push_back({
+		glm::vec3(0.0f,13.0f, 0.0f),
+		glm::vec3(0.8f, 0.8f, 0.8f),
+		skinTex
+		});
+
+	// ===== HAT BRIM =====
+	parts.push_back({
+		glm::vec3(0.0f, 15.7f, 0.0f),
+		glm::vec3(1.4f, 0.15f, 1.4f),
+		hatTex
+		});
+
+	// ===== HAT TOP =====
+	parts.push_back({
+		glm::vec3(0.0f, 15.9f, 0.0f),
+		glm::vec3(0.7f, 1.4f, 0.7f),
+		hatTex
+		});
+
+	// ===== LEFT ARM =====
+	parts.push_back({
+		glm::vec3(-5.1f, 2.2f, 0.0f),
+		glm::vec3(0.35f, 1.6f, 0.35f),
+		robeTex
+		});
+
+	// ===== RIGHT ARM =====
+	parts.push_back({
+		glm::vec3(5.1f, 2.2f, 0.0f),
+		glm::vec3(0.35f, 1.6f, 0.35f),
+		robeTex
+		});
+
+	// ===== STAFF =====
+	parts.push_back({
+		glm::vec3(5.8f, 1.8f, 0.0f),
+		glm::vec3(0.2f, 3.8f, 0.2f),
+		staffTex
+		});
+
+	return parts;
+}
+
 
 
 
@@ -360,17 +471,25 @@ int main()
 		"Resources/Skybox/BlueSky/front.bmp",
 		"Resources/Skybox/BlueSky/back.bmp"
 	};
-	
+
 	//s1 fix skymap
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	GLuint cubemapTexture = loadCubemap(skyboxFaces);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // RESTORE DEFAULT
-	
+
 	//Textures
 	GLuint tex = loadBMP("Resources/Textures/wood.bmp");
 	GLuint tex2 = loadBMP("Resources/Textures/rock.bmp");
 	GLuint tex3 = loadBMP("Resources/Textures/orange.bmp");
 	GLuint tex_tree = loadBMP("Resources/Textures/TreeUVmap.bmp");
+
+
+	// ---------- Sword textures ----------
+	GLuint bladeTex = loadBMP("Resources/Textures/wood.bmp");
+	GLuint guardTex = loadBMP("Resources/Textures/wood.bmp");
+	GLuint handleTex = loadBMP("Resources/Textures/wood.bmp");
+	GLuint pommelTex = loadBMP("Resources/Textures/wood.bmp");
+
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -385,7 +504,7 @@ int main()
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	
+
 
 
 	//Test custom mesh loading
@@ -411,7 +530,7 @@ int main()
 	vert[2].normals = glm::normalize(glm::cross(vert[3].pos - vert[2].pos, vert[1].pos - vert[2].pos));
 	vert[3].normals = glm::normalize(glm::cross(vert[0].pos - vert[3].pos, vert[2].pos - vert[3].pos));
 
-	std::vector<int> ind = { 0, 1, 3,   
+	std::vector<int> ind = { 0, 1, 3,
 		1, 2, 3 };
 
 	std::vector<Texture> textures;
@@ -444,6 +563,17 @@ int main()
 	treeTextures[0].id = tex_tree;
 	treeTextures[0].type = "texture_diffuse";
 
+	// ---------- Empty texture list for procedural cube rendering ----------
+	std::vector<Texture> emptyTextures;
+
+	//wiz textures
+	GLuint robeTex = tex3;      // orange / robe
+	GLuint skinTex = tex2;      // rock or skin
+	GLuint hatTex = tex;       // wood / hat
+	GLuint staffTex = tex_tree;  // staff
+
+
+
 
 
 
@@ -453,7 +583,10 @@ int main()
 	// we can add here our textures :)
 	MeshLoaderObj loader;
 	Mesh sun = loader.loadObj("Resources/Models/sphere.obj");
-	Mesh box = loader.loadObj("Resources/Models/cube.obj", textures);
+	//Mesh box = loader.loadObj("Resources/Models/cube.obj", textures);
+	// // Cube mesh WITHOUT textures (textures bound manually per draw)
+	Mesh box = loader.loadObj("Resources/Models/cube.obj", emptyTextures);
+
 	//Mesh plane = loader.loadObj("Resources/Models/plane.obj", textures3);
 	//s1 new plane
 	Mesh terrain = generateTerrain(
@@ -464,11 +597,11 @@ int main()
 	);
 
 	// tree
-	Mesh tree = loader.loadObj("Resources/Models/HorrorTree.obj",treeTextures);
+	Mesh tree = loader.loadObj("Resources/Models/HorrorTree.obj", treeTextures);
 
 
 	//s1
-	Mesh sword = loader.loadObj("Resources/Models/cube.obj", textures);
+	//s3 Mesh sword = loader.loadObj("Resources/Models/cube.obj", textures);
 
 	// tree positions
 	std::vector<glm::vec3> treePositions;
@@ -487,7 +620,7 @@ int main()
 		TreeCollider c;
 		c.center = pos;
 		c.radius = 2.5f * 5.0f;   // scale * trunk radius
-		c.height = 20.0f * 5.0f; 
+		c.height = 20.0f * 5.0f;
 
 		treeColliders.push_back(c);
 	}
@@ -651,12 +784,34 @@ int main()
 
 
 
-		glm::mat4 swordMVP = ProjectionMatrix * ViewMatrix * swordModel;
+		/*glm::mat4 swordMVP = ProjectionMatrix * ViewMatrix * swordModel;
 
 		glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &swordMVP[0][0]);
 		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &swordModel[0][0]);
 
-		sword.draw(shader);
+		sword.draw(shader);*/
+		// ---------- Procedural sword drawing ----------
+		std::vector<SwordPart> swordParts =
+			getSwordParts(bladeTex, guardTex, handleTex, pommelTex);
+
+		for (auto& part : swordParts)
+		{
+			glm::mat4 model = swordModel;
+			model = glm::translate(model, part.offset);
+			model = glm::scale(model, part.scale);
+
+			glm::mat4 MVP = ProjectionMatrix * ViewMatrix * model;
+
+			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
+			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
+
+			// Bind texture for this sword part
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, part.textureID);
+
+			box.draw(shader);
+		}
+
 
 
 		///// Test Obj files for box ////
@@ -694,24 +849,52 @@ int main()
 
 		//s2 wizad enemy
 		// Pre-create wizard parts
-		std::vector<WizardPart> wizardParts = getWizardParts();
+		//std::vector<WizardPart> wizardParts = getWizardParts();
+
+		//if (enemyAlive)
+		//{
+		//	for (auto& part : wizardParts)
+		//	{
+		//		glm::mat4 ModelMatrix = glm::mat4(1.0f);
+		//		ModelMatrix = glm::translate(ModelMatrix, enemyPos + part.offset);
+		//		ModelMatrix = glm::scale(ModelMatrix, part.scale);
+
+		//		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+
+		//		glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
+		//		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+
+		//		box.draw(shader);  // Re-use the cube mesh
+		//	}
+		//}
+
+		auto wizardParts = getWizardParts(
+			robeTex,
+			skinTex,
+			hatTex,
+			staffTex
+		);
 
 		if (enemyAlive)
 		{
 			for (auto& part : wizardParts)
 			{
-				glm::mat4 ModelMatrix = glm::mat4(1.0f);
-				ModelMatrix = glm::translate(ModelMatrix, enemyPos + part.offset);
-				ModelMatrix = glm::scale(ModelMatrix, part.scale);
+				glm::mat4 model = glm::mat4(1.0f);
+				model = glm::translate(model, enemyPos + part.offset);
+				model = glm::scale(model, part.scale);
 
-				glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+				glm::mat4 MVP = ProjectionMatrix * ViewMatrix * model;
 
 				glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
-				glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+				glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
 
-				box.draw(shader);  // Re-use the cube mesh
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, part.texture);
+
+				box.draw(shader); // ONLY cube.obj
 			}
 		}
+
 
 
 
@@ -756,7 +939,7 @@ int main()
 		//s1 combat logic
 		float enemyBaseY = 0.0f;
 		float attackRange = 15.0f;
-		
+
 
 		if (window.isPressed(GLFW_KEY_E) && enemyAlive && currentTask == 0)
 		{
@@ -772,13 +955,14 @@ int main()
 			else {
 				std::cout << "Too far to attack." << std::endl;
 			}
-		}else {
+		}
+		else {
 			swingTime = 0.0f;
 		}
 		enemyPos.y = enemyBaseY + sin(glfwGetTime()) * 2.0f;
 
 
-		
+
 		//s1 skybox load 
 		//!!!!!!
 		//glDepthFunc(GL_LEQUAL);
@@ -908,13 +1092,13 @@ void processKeyboardInput()
 }
 
 
-	//s1 disabled
-	////rotation
-	//if (window.isPressed(GLFW_KEY_LEFT))	
-	//	camera.rotateOy(cameraSpeed);
-	//if (window.isPressed(GLFW_KEY_RIGHT))
-	//	camera.rotateOy(-cameraSpeed);
-	//if (window.isPressed(GLFW_KEY_UP))
-	//	camera.rotateOx(cameraSpeed);
-	//if (window.isPressed(GLFW_KEY_DOWN))
-	//	camera.rotateOx(-cameraSpeed);
+//s1 disabled
+////rotation
+//if (window.isPressed(GLFW_KEY_LEFT))	
+//	camera.rotateOy(cameraSpeed);
+//if (window.isPressed(GLFW_KEY_RIGHT))
+//	camera.rotateOy(-cameraSpeed);
+//if (window.isPressed(GLFW_KEY_UP))
+//	camera.rotateOx(cameraSpeed);
+//if (window.isPressed(GLFW_KEY_DOWN))
+//	camera.rotateOx(-cameraSpeed);

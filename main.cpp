@@ -4,8 +4,9 @@
 #include "Model Loading\mesh.h"
 #include "Model Loading\texture.h"
 #include "Model Loading\meshLoaderObj.h"
+#include <time.h>
 
-void processKeyboardInput ();
+void processKeyboardInput();
 
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
@@ -16,6 +17,25 @@ Camera camera;
 glm::vec3 lightColor = glm::vec3(1.0f);
 glm::vec3 lightPos = glm::vec3(-180.0f, 100.0f, -200.0f);
 
+
+//s3 task2
+enum class GameState
+{
+	WORLD,
+	SIMON_INTRO,
+	SIMON_SHOW,
+	SIMON_INPUT,
+	SIMON_SUCCESS,
+	SIMON_FAIL
+};
+GameState gameState = GameState::WORLD;
+
+glm::vec3 memoryTilePos = glm::vec3(20.0f, 0.0f, 10.0f);
+float memoryTileRadius = 4.0f;
+bool task2Completed = false;
+
+
+
 //s1 enemy
 glm::vec3 enemyPos = glm::vec3(-10.0f, 0.0f, 0.0f);// midde irelevent
 bool enemyAlive = true;
@@ -24,6 +44,37 @@ float distance(glm::vec3 a, glm::vec3 b)
 {
 	return glm::length(a - b);
 }
+struct TreeCollider
+{
+	glm::vec3 center;
+	float radius;
+	float height;
+};
+// define a collision to block camera from moving through the trees
+
+std::vector<TreeCollider> treeColliders;
+
+bool checkTreeCollision(
+	const glm::vec3& newPos,
+	const std::vector<TreeCollider>& colliders
+)
+{
+	for (const auto& c : colliders)
+	{
+		// Horizontal distance only (XZ plane)
+		glm::vec2 p(newPos.x, newPos.z);
+		glm::vec2 t(c.center.x, c.center.z);
+
+		float dist = glm::length(p - t);
+		if (dist < c.radius)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
 
 //s1 vars
 int currentTask = 0;
@@ -221,7 +272,7 @@ unsigned char* loadBMPPixels(const char* imagepath, unsigned int& width, unsigne
 
 
 
- 
+
 GLuint loadCubemap(const std::vector<std::string>& faces)
 {
 	GLuint textureID;
@@ -263,12 +314,23 @@ GLuint loadCubemap(const std::vector<std::string>& faces)
 
 	return textureID;
 }
-//s2
-struct SwordPart {
+
+struct WizardPart
+{
+	glm::vec3 offset;
+	glm::vec3 scale;
+	GLuint texture;
+};
+
+
+// ---------- Sword parts (procedural model) ----------
+struct SwordPart
+{
 	glm::vec3 offset;
 	glm::vec3 scale;
 	GLuint textureID;
 };
+
 std::vector<SwordPart> getSwordParts(
 	GLuint bladeTex,
 	GLuint guardTex,
@@ -278,24 +340,28 @@ std::vector<SwordPart> getSwordParts(
 {
 	std::vector<SwordPart> parts;
 
+	// Blade
 	parts.push_back({
 		glm::vec3(0.0f, 6.0f, 0.0f),
 		glm::vec3(0.4f, 8.0f, 0.2f),
 		bladeTex
 		});
 
+	// Guard
 	parts.push_back({
 		glm::vec3(0.0f, 2.0f, 0.0f),
 		glm::vec3(2.0f, 0.3f, 0.5f),
 		guardTex
 		});
 
+	// Handle
 	parts.push_back({
 		glm::vec3(0.0f, -1.5f, 0.0f),
 		glm::vec3(0.3f, 3.0f, 0.3f),
 		handleTex
 		});
 
+	// Pommel
 	parts.push_back({
 		glm::vec3(0.0f, -3.2f, 0.0f),
 		glm::vec3(0.6f, 0.6f, 0.6f),
@@ -307,32 +373,68 @@ std::vector<SwordPart> getSwordParts(
 
 
 
-struct WizardPart {
-	glm::vec3 offset;   // relative to enemyPos
-	glm::vec3 scale;    // cube scale
-};
 
-std::vector<WizardPart> getWizardParts()
+std::vector<WizardPart> getWizardParts(
+	GLuint robeTex,
+	GLuint skinTex,
+	GLuint hatTex,
+	GLuint staffTex
+)
 {
 	std::vector<WizardPart> parts;
 
-	// Hat (purple)
-	parts.push_back({ glm::vec3(0.0f, 2.25f, 0.0f), glm::vec3(1.0f, 0.5f, 1.0f) });
+	// ===== ROBE BODY (tall + tapered look) =====
+	parts.push_back({
+		glm::vec3(0.0f, 1.5f, 0.0f),
+		glm::vec3(1.5f, 2.3f, 0.9f),
+		robeTex
+		});
 
-	// Head (skin color)
-	parts.push_back({ glm::vec3(0.0f, 1.25f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f) });
+	// ===== HEAD =====
+	parts.push_back({
+		glm::vec3(0.0f,13.0f, 0.0f),
+		glm::vec3(0.8f, 0.8f, 0.8f),
+		skinTex
+		});
 
-	// Body (purple)
-	parts.push_back({ glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.5f, 0.5f) });
+	// ===== HAT BRIM =====
+	parts.push_back({
+		glm::vec3(0.0f, 15.7f, 0.0f),
+		glm::vec3(1.4f, 0.15f, 1.4f),
+		hatTex
+		});
 
-	// Left leg (dark purple)
-	parts.push_back({ glm::vec3(-0.25f, -1.25f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f) });
+	// ===== HAT TOP =====
+	parts.push_back({
+		glm::vec3(0.0f, 15.9f, 0.0f),
+		glm::vec3(0.7f, 1.4f, 0.7f),
+		hatTex
+		});
 
-	// Right leg (dark purple)
-	parts.push_back({ glm::vec3(0.25f, -1.25f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f) });
+	// ===== LEFT ARM =====
+	parts.push_back({
+		glm::vec3(-5.1f, 2.2f, 0.0f),
+		glm::vec3(0.35f, 1.6f, 0.35f),
+		robeTex
+		});
+
+	// ===== RIGHT ARM =====
+	parts.push_back({
+		glm::vec3(5.1f, 2.2f, 0.0f),
+		glm::vec3(0.35f, 1.6f, 0.35f),
+		robeTex
+		});
+
+	// ===== STAFF =====
+	parts.push_back({
+		glm::vec3(5.8f, 1.8f, 0.0f),
+		glm::vec3(0.2f, 3.8f, 0.2f),
+		staffTex
+		});
 
 	return parts;
 }
+
 
 
 
@@ -369,21 +471,24 @@ int main()
 		"Resources/Skybox/BlueSky/front.bmp",
 		"Resources/Skybox/BlueSky/back.bmp"
 	};
-	
+
 	//s1 fix skymap
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	GLuint cubemapTexture = loadCubemap(skyboxFaces);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // RESTORE DEFAULT
-	
+
 	//Textures
 	GLuint tex = loadBMP("Resources/Textures/wood.bmp");
 	GLuint tex2 = loadBMP("Resources/Textures/rock.bmp");
 	GLuint tex3 = loadBMP("Resources/Textures/orange.bmp");
+	GLuint tex_tree = loadBMP("Resources/Textures/TreeUVmap.bmp");
 
-	GLuint bladeTex = loadBMP("Resources/Textures/metal.bmp");
-	GLuint guardTex = loadBMP("Resources/Textures/metal.bmp");
-	GLuint handleTex = loadBMP("Resources/Textures/metal.bmp");
-	GLuint pommelTex = loadBMP("Resources/Textures/metal.bmp");
+
+	// ---------- Sword textures ----------
+	GLuint bladeTex = loadBMP("Resources/Textures/wood.bmp");
+	GLuint guardTex = loadBMP("Resources/Textures/wood.bmp");
+	GLuint handleTex = loadBMP("Resources/Textures/wood.bmp");
+	GLuint pommelTex = loadBMP("Resources/Textures/wood.bmp");
 
 
 	glEnable(GL_DEPTH_TEST);
@@ -399,7 +504,7 @@ int main()
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	
+
 
 
 	//Test custom mesh loading
@@ -425,7 +530,7 @@ int main()
 	vert[2].normals = glm::normalize(glm::cross(vert[3].pos - vert[2].pos, vert[1].pos - vert[2].pos));
 	vert[3].normals = glm::normalize(glm::cross(vert[0].pos - vert[3].pos, vert[2].pos - vert[3].pos));
 
-	std::vector<int> ind = { 0, 1, 3,   
+	std::vector<int> ind = { 0, 1, 3,
 		1, 2, 3 };
 
 	std::vector<Texture> textures;
@@ -452,6 +557,23 @@ int main()
 	grassTextures[0].type = "texture_diffuse";
 
 
+	// tree texture 
+	std::vector<Texture> treeTextures;
+	treeTextures.push_back(Texture());
+	treeTextures[0].id = tex_tree;
+	treeTextures[0].type = "texture_diffuse";
+
+	// ---------- Empty texture list for procedural cube rendering ----------
+	std::vector<Texture> emptyTextures;
+
+	//wiz textures
+	GLuint robeTex = tex3;      // orange / robe
+	GLuint skinTex = tex2;      // rock or skin
+	GLuint hatTex = tex;       // wood / hat
+	GLuint staffTex = tex_tree;  // staff
+
+
+
 
 
 
@@ -461,7 +583,10 @@ int main()
 	// we can add here our textures :)
 	MeshLoaderObj loader;
 	Mesh sun = loader.loadObj("Resources/Models/sphere.obj");
-	Mesh box = loader.loadObj("Resources/Models/cube.obj", textures);
+	//Mesh box = loader.loadObj("Resources/Models/cube.obj", textures);
+	// // Cube mesh WITHOUT textures (textures bound manually per draw)
+	Mesh box = loader.loadObj("Resources/Models/cube.obj", emptyTextures);
+
 	//Mesh plane = loader.loadObj("Resources/Models/plane.obj", textures3);
 	//s1 new plane
 	Mesh terrain = generateTerrain(
@@ -471,9 +596,34 @@ int main()
 		grassTextures // (we’ll swap this to grass)
 	);
 
+	// tree
+	Mesh tree = loader.loadObj("Resources/Models/HorrorTree.obj", treeTextures);
+
 
 	//s1
-	Mesh sword = loader.loadObj("Resources/Models/cube.obj", textures);
+	//s3 Mesh sword = loader.loadObj("Resources/Models/cube.obj", textures);
+
+	// tree positions
+	std::vector<glm::vec3> treePositions;
+	for (int x = -300; x <= 300; x += 40)
+	{
+		for (int z = -300; z <= 300; z += 40)
+		{
+			float y = getGroundHeight(x, z);
+			treePositions.push_back(glm::vec3(x, y, z));
+		}
+	}
+
+
+	for (const auto& pos : treePositions)
+	{
+		TreeCollider c;
+		c.center = pos;
+		c.radius = 2.5f * 5.0f;   // scale * trunk radius
+		c.height = 20.0f * 5.0f;
+
+		treeColliders.push_back(c);
+	}
 
 	//s1 task1 intro
 	std::cout << "Task 1: Approach the warlock and press E to attack." << std::endl;
@@ -483,6 +633,7 @@ int main()
 		glfwWindowShouldClose(window.getWindow()) == 0)
 	{
 		window.clear();
+
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
@@ -597,10 +748,6 @@ int main()
 		//// End code for the light ////
 
 		shader.use();
-		glUniform1i(
-			glGetUniformLocation(shader.getId(), "texture_diffuse1"),
-			0
-		);
 
 		//s1 build sword /////
 
@@ -637,49 +784,19 @@ int main()
 
 
 
-		glm::mat4 swordMVP = ProjectionMatrix * ViewMatrix * swordModel;
+		/*glm::mat4 swordMVP = ProjectionMatrix * ViewMatrix * swordModel;
 
 		glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &swordMVP[0][0]);
 		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &swordModel[0][0]);
 
-		//sword.draw(shader);
-		//s2 sword draw
-		// ----- Sword base transform (attached to camera) -----
-		glm::mat4 swordBase = glm::mat4(1.0f);
-
-		// Move to camera position
-		swordBase = glm::translate(swordBase, camera.getCameraPosition());
-
-		// Rotate with camera (remove translation from view)
-		swordBase *= glm::mat4(glm::mat3(ViewMatrix));
-
-		// Offset in front of player
-		swordBase = glm::translate(swordBase, swordOffset);
-
-		// Overall sword scale
-		swordBase = glm::scale(swordBase, glm::vec3(0.5f));
-
-		//// Swing animation unused
-		//float swingAngle = glm::clamp(
-		//	sin(swingTime) * 80.0f,
-		//	-60.0f,
-		//	100.0f
-		//);
-
-		swordBase = glm::rotate(
-			swordBase,
-			glm::radians(swingAngle),
-			glm::vec3(1, 0, 0)
-		);
-
-
-		//s2 sword draww
+		sword.draw(shader);*/
+		// ---------- Procedural sword drawing ----------
 		std::vector<SwordPart> swordParts =
 			getSwordParts(bladeTex, guardTex, handleTex, pommelTex);
 
 		for (auto& part : swordParts)
 		{
-			glm::mat4 model = swordBase;
+			glm::mat4 model = swordModel;
 			model = glm::translate(model, part.offset);
 			model = glm::scale(model, part.scale);
 
@@ -688,14 +805,12 @@ int main()
 			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
 			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
 
-			// 🔑 Bind texture for THIS sword part
+			// Bind texture for this sword part
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, part.textureID);
 
 			box.draw(shader);
 		}
-
-
 
 
 
@@ -734,24 +849,52 @@ int main()
 
 		//s2 wizad enemy
 		// Pre-create wizard parts
-		std::vector<WizardPart> wizardParts = getWizardParts();
+		//std::vector<WizardPart> wizardParts = getWizardParts();
+
+		//if (enemyAlive)
+		//{
+		//	for (auto& part : wizardParts)
+		//	{
+		//		glm::mat4 ModelMatrix = glm::mat4(1.0f);
+		//		ModelMatrix = glm::translate(ModelMatrix, enemyPos + part.offset);
+		//		ModelMatrix = glm::scale(ModelMatrix, part.scale);
+
+		//		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+
+		//		glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
+		//		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+
+		//		box.draw(shader);  // Re-use the cube mesh
+		//	}
+		//}
+
+		auto wizardParts = getWizardParts(
+			robeTex,
+			skinTex,
+			hatTex,
+			staffTex
+		);
 
 		if (enemyAlive)
 		{
 			for (auto& part : wizardParts)
 			{
-				glm::mat4 ModelMatrix = glm::mat4(1.0f);
-				ModelMatrix = glm::translate(ModelMatrix, enemyPos + part.offset);
-				ModelMatrix = glm::scale(ModelMatrix, part.scale);
+				glm::mat4 model = glm::mat4(1.0f);
+				model = glm::translate(model, enemyPos + part.offset);
+				model = glm::scale(model, part.scale);
 
-				glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+				glm::mat4 MVP = ProjectionMatrix * ViewMatrix * model;
 
 				glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
-				glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+				glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
 
-				box.draw(shader);  // Re-use the cube mesh
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, part.texture);
+
+				box.draw(shader); // ONLY cube.obj
 			}
 		}
+
 
 
 
@@ -775,11 +918,28 @@ int main()
 		terrain.draw(shader);
 
 
+		// trees drawing
+		for (const auto& treePos : treePositions)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, treePos);
+			model = glm::scale(model, glm::vec3(5.0f));
+
+			MVP = ProjectionMatrix * ViewMatrix * model;
+
+			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
+			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
+
+			tree.draw(shader);
+		}
+
+
+
 
 		//s1 combat logic
 		float enemyBaseY = 0.0f;
 		float attackRange = 15.0f;
-		
+
 
 		if (window.isPressed(GLFW_KEY_E) && enemyAlive && currentTask == 0)
 		{
@@ -795,10 +955,13 @@ int main()
 			else {
 				std::cout << "Too far to attack." << std::endl;
 			}
-		}else {
+		}
+		else {
 			swingTime = 0.0f;
 		}
 		enemyPos.y = enemyBaseY + sin(glfwGetTime()) * 2.0f;
+
+
 
 		//s1 skybox load 
 		//!!!!!!
@@ -826,6 +989,7 @@ int main()
 		//glDepthMask(GL_TRUE);
 		//glDepthFunc(GL_LESS);
 
+
 		// ---------- SKYBOX (DRAW FIRST) ----------
 		glDepthMask(GL_FALSE);
 		glDepthFunc(GL_LEQUAL);
@@ -833,7 +997,7 @@ int main()
 
 		skyboxShader.use();
 
-		// REMOVE camera translation
+		// Use SAME camera matrices (no translation)
 		glm::mat4 view = glm::mat4(glm::mat3(
 			glm::lookAt(
 				camera.getCameraPosition(),
@@ -842,7 +1006,6 @@ int main()
 			)
 		));
 
-		// IMPORTANT: radians
 		glm::mat4 proj = glm::perspective(
 			glm::radians(70.0f),
 			(float)window.getWidth() / window.getHeight(),
@@ -851,15 +1014,19 @@ int main()
 		);
 
 		glm::mat4 VP = proj * view;
+
 		glUniformMatrix4fv(
 			glGetUniformLocation(skyboxShader.getId(), "VP"),
 			1, GL_FALSE, &VP[0][0]
 		);
 
 		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
+		// Restore state
 		glEnable(GL_CULL_FACE);
 		glDepthMask(GL_TRUE);
 		glDepthFunc(GL_LESS);
@@ -875,38 +1042,63 @@ void processKeyboardInput()
 {
 	float cameraSpeed = 30 * deltaTime;
 
-	//translation
+	glm::vec3 oldPos = camera.getCameraPosition();
+
 	if (window.isPressed(GLFW_KEY_W))
-		//std::cout << "wwww" << std::endl;
+	{
 		camera.keyboardMoveFront(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_S))
+	{
 		camera.keyboardMoveBack(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_A))
-		//std::cout << "aaaaa" << std::endl;
+	{
 		camera.keyboardMoveLeft(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_D))
+	{
 		camera.keyboardMoveRight(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_R))
 		camera.keyboardMoveUp(cameraSpeed);
 	if (window.isPressed(GLFW_KEY_F))
 		camera.keyboardMoveDown(cameraSpeed);
-	 
-	//s2 jump
-	if (window.isPressed(GLFW_KEY_SPACE)) {
-		float groundY = getGroundHeight(camera.getCameraPosition().x, camera.getCameraPosition().z) + playerHeight;
-		if (camera.getCameraPosition().y <= groundY + 0.01f) {
-			verticalVelocity = 30.0f; // Jump strength
-		}
-	}
 
-	//s1 disabled
-	////rotation
-	//if (window.isPressed(GLFW_KEY_LEFT))	
-	//	camera.rotateOy(cameraSpeed);
-	//if (window.isPressed(GLFW_KEY_RIGHT))
-	//	camera.rotateOy(-cameraSpeed);
-	//if (window.isPressed(GLFW_KEY_UP))
-	//	camera.rotateOx(cameraSpeed);
-	//if (window.isPressed(GLFW_KEY_DOWN))
-	//	camera.rotateOx(-cameraSpeed);
+	// Jump
+	if (window.isPressed(GLFW_KEY_SPACE))
+	{
+		float groundY =
+			getGroundHeight(
+				camera.getCameraPosition().x,
+				camera.getCameraPosition().z
+			) + playerHeight;
+
+		if (camera.getCameraPosition().y <= groundY + 0.01f)
+			verticalVelocity = 30.0f;
+	}
 }
+
+
+//s1 disabled
+////rotation
+//if (window.isPressed(GLFW_KEY_LEFT))	
+//	camera.rotateOy(cameraSpeed);
+//if (window.isPressed(GLFW_KEY_RIGHT))
+//	camera.rotateOy(-cameraSpeed);
+//if (window.isPressed(GLFW_KEY_UP))
+//	camera.rotateOx(cameraSpeed);
+//if (window.isPressed(GLFW_KEY_DOWN))
+//	camera.rotateOx(-cameraSpeed);
