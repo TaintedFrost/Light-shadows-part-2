@@ -1,4 +1,11 @@
-GameEngine/Debug/
-*.log
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# Build output
+Debug/
+Release/
+*.exe
 *.tlog
-*.recipe
+*.log
