@@ -18,23 +18,6 @@ glm::vec3 lightColor = glm::vec3(1.0f);
 glm::vec3 lightPos = glm::vec3(-180.0f, 100.0f, -200.0f);
 
 
-//s3 task2
-enum class GameState
-{
-	WORLD,
-	SIMON_INTRO,
-	SIMON_SHOW,
-	SIMON_INPUT,
-	SIMON_SUCCESS,
-	SIMON_FAIL
-};
-GameState gameState = GameState::WORLD;
-
-glm::vec3 memoryTilePos = glm::vec3(20.0f, 0.0f, 10.0f);
-float memoryTileRadius = 4.0f;
-bool task2Completed = false;
-
-
 
 //s1 enemy
 glm::vec3 enemyPos = glm::vec3(-10.0f, 0.0f, 0.0f);// midde irelevent
@@ -80,6 +63,35 @@ bool checkTreeCollision(
 int currentTask = 0;
 glm::vec3 swordOffset = glm::vec3(5.0f, -5.0f, -10.0f);
 float swingTime = 0.0f;
+
+// Task 2 Vars
+enum Task2Phase {
+	T2_IDLE,
+	T2_SHINY_CUBE,
+	T2_SHOW_SAMPLE,
+	T2_SCATTERED,
+	T2_COMPLETED,
+	T2_FAILED_WAIT // New phase for failure feedback
+};
+
+struct PuzzleCube {
+	glm::vec3 pos;
+	int type; // 0=Wood, 1=Rock, 2=Fire(Orange), 3=Orange(Texture)
+	bool collected;
+	glm::vec3 targetPos; // For animation or placeholder slot
+};
+
+Task2Phase t2Phase = T2_IDLE;
+float t2Timer = 0.0f;
+std::vector<PuzzleCube> puzzleCubes;
+glm::vec3 shinyCubePos;
+int collectedCubesCount = 0;
+glm::vec3 t2BasePos;
+
+// Store the correct order
+std::vector<int> t2TargetOrder;
+// Store what the user collected
+std::vector<int> t2UserOrder;
 
 
 //s1 player and camera
@@ -436,6 +448,44 @@ std::vector<WizardPart> getWizardParts(
 }
 
 
+// TASK 2 HELPERS
+
+// Check if a position collides with any tree (simple circle check)
+bool isSafeFromTrees(glm::vec3 pos, float safeRadius, const std::vector<TreeCollider>& colliders)
+{
+	for (const auto& c : colliders)
+	{
+		// Distance in XZ plane
+		float d = glm::distance(glm::vec2(pos.x, pos.z), glm::vec2(c.center.x, c.center.z));
+		if (d < (c.radius + safeRadius))
+		{
+			return false; // Collision
+		}
+	}
+	return true;
+}
+
+glm::vec3 spawnRandomCubeSafe(const std::vector<TreeCollider>& colliders, glm::vec3 center, float range)
+{
+	int attempts = 0;
+	while (attempts < 100)
+	{
+		float rx = ((rand() % 100) / 50.0f - 1.0f) * range; // -range to range
+		float rz = ((rand() % 100) / 50.0f - 1.0f) * range;
+
+		glm::vec3 cand = center + glm::vec3(rx, 0.0f, rz);
+		cand.y = getGroundHeight(cand.x, cand.z) + 2.0f; // On ground
+
+		if (isSafeFromTrees(cand, 3.0f, colliders)) 
+		{
+			return cand;
+		}
+		attempts++;
+	}
+	return center + glm::vec3(0, 10, 0); // Fallback
+}
+
+
 
 
 
@@ -445,6 +495,7 @@ std::vector<WizardPart> getWizardParts(
 ////////////////////////////////////////////////////////////////
 int main()
 {
+	srand(time(NULL));
 	glClearColor(0.2f, 0.8f, 1.0f, 1.0f);
 	//s1 grav test
 	camera.setCameraPosition(glm::vec3(0.0f, 50.0f, 100.0f));
@@ -547,6 +598,12 @@ int main()
 	textures3.push_back(Texture());
 	textures3[0].id = tex3;
 	textures3[0].type = "texture_diffuse";
+
+	// s2 Orange2 (Requested texture)
+	GLuint tex4 = loadBMP("Resources/Textures/orange2.bmp");
+
+	// metal
+	GLuint tex5 = loadBMP("Resources/Textures/metal.bmp");
 
 	//s2 grass texture
 	GLuint grassTex = loadBMP("Resources/Textures/grass.bmp");
@@ -951,6 +1008,11 @@ int main()
 				currentTask = 1;
 				std::cout << "Task 1 complete!" << std::endl;
 				std::cout << "Task 2: Explore the arena." << std::endl;
+				
+				// TRIGGER TASK 2
+				t2Phase = T2_SHINY_CUBE;
+				shinyCubePos = enemyPos + glm::vec3(-25.0f, 0.0f, 0.0f); 
+				shinyCubePos.y = getGroundHeight(shinyCubePos.x, shinyCubePos.z) + 3.0f;
 			}
 			else {
 				std::cout << "Too far to attack." << std::endl;
@@ -960,6 +1022,204 @@ int main()
 			swingTime = 0.0f;
 		}
 		enemyPos.y = enemyBaseY + sin(glfwGetTime()) * 2.0f;
+
+
+		// TASK 2 LOGIC         <<<<<<<<<<<<<<<<<<<<<<<<<<
+
+		static std::vector<glm::vec3> t2Slots; // Store slot positions
+
+		if (t2Phase == T2_SHINY_CUBE)
+		{
+			if (distance(camera.getCameraPosition(), shinyCubePos) < 15.0f)
+			{
+				std::cout << "Task 2 Started! Memorize the order!" << std::endl;
+				t2Phase = T2_SHOW_SAMPLE;
+				t2Timer = 5.0f;
+				t2BasePos = enemyPos + glm::vec3(-20.0f, 0.0f, 0.0f); 
+				
+				t2Slots.clear();
+				puzzleCubes.clear();
+				t2TargetOrder.clear();
+				t2UserOrder.clear();
+
+				std::vector<int> types = { 0, 1, 2, 3 }; 
+				// Simple shuffle
+				for (int i = 0; i < 10; i++) {
+					int r1 = rand() % 4;
+					int r2 = rand() % 4;
+					std::swap(types[r1], types[r2]);
+				}
+				
+				t2TargetOrder = types;
+
+				// Align along Z axis
+				glm::vec3 right = glm::vec3(0.0f, 0.0f, 1.0f); 
+				
+				for (int i = 0; i < 4; i++)
+				{
+					PuzzleCube pc;
+					pc.type = types[i];
+					glm::vec3 slotPos = t2BasePos + right * ((i - 1.5f) * 6.5f);
+					slotPos.y = getGroundHeight(slotPos.x, slotPos.z) + 2.0f;
+					
+					pc.pos = slotPos;
+					pc.targetPos = slotPos; // original slot
+					pc.collected = false;
+					
+					puzzleCubes.push_back(pc);
+					t2Slots.push_back(slotPos);
+				}
+				collectedCubesCount = 0;
+			}
+		}
+		else if (t2Phase == T2_SHOW_SAMPLE)
+		{
+			t2Timer -= deltaTime;
+			if (t2Timer <= 0.0f)
+			{
+				std::cout << "Scattered! Find them!" << std::endl;
+				t2Phase = T2_SCATTERED;
+				for (auto& pc : puzzleCubes)
+				{
+					pc.pos = spawnRandomCubeSafe(treeColliders, t2BasePos, 40.0f);
+					pc.collected = false;
+				}
+				collectedCubesCount = 0;
+				t2UserOrder.clear();
+			}
+		}
+		else if (t2Phase == T2_SCATTERED)
+		{
+			if (collectedCubesCount < 4 && window.isPressed(GLFW_KEY_E))
+			{
+				bool found = false;
+				for (auto& pc : puzzleCubes)
+				{
+					if (!pc.collected && distance(camera.getCameraPosition(), pc.pos) < 15.0f)
+					{
+						pc.collected = true;
+						pc.pos = t2Slots[collectedCubesCount]; // Move to next available slot
+						
+						t2UserOrder.push_back(pc.type);
+						
+						collectedCubesCount++;
+						found = true;
+						std::cout << "Collected cube! " << collectedCubesCount << "/4" << std::endl;
+						break; // Collect one at a time
+					}
+				}
+				
+				if (collectedCubesCount >= 4)
+				{
+					// VERIFY ORDER
+					bool correct = true;
+					for(size_t i=0; i<4; ++i) {
+						if(t2UserOrder[i] != t2TargetOrder[i]) {
+							correct = false;
+							break;
+						}
+					}
+
+					if (correct)
+					{
+						t2Phase = T2_COMPLETED;
+						std::cout << "Task 2 Completed! Correct Order!" << std::endl;
+					}
+					else 
+					{
+						std::cout << "Wrong Order! Resetting in 5 seconds..." << std::endl;
+						t2Phase = T2_FAILED_WAIT;
+						t2Timer = 5.0f;
+					}
+				}
+			}
+		}
+		else if (t2Phase == T2_FAILED_WAIT)
+		{
+			t2Timer -= deltaTime;
+			if (t2Timer <= 0.0f)
+			{
+				std::cout << "Scattering Again..." << std::endl;
+				// Reset Logic
+				t2Phase = T2_SCATTERED;
+				// Re-scatter cubes
+				for (auto& pc : puzzleCubes)
+				{
+					pc.pos = spawnRandomCubeSafe(treeColliders, t2BasePos, 40.0f);
+					pc.collected = false;
+				}
+				collectedCubesCount = 0;
+				t2UserOrder.clear();
+			}
+		}
+
+		// TASK 2 RENDER
+		
+		if (t2Phase != T2_IDLE)
+		{
+			// Shiny Cube
+			if (t2Phase == T2_SHINY_CUBE)
+			{
+				sunShader.use(); // Draw as bright object
+				glm::mat4 model = glm::mat4(1.0f);
+				model = glm::translate(model, shinyCubePos);
+				model = glm::scale(model, glm::vec3(1.5f));
+				
+				glm::mat4 mvp = ProjectionMatrix * ViewMatrix * model;
+				glUniformMatrix4fv(glGetUniformLocation(sunShader.getId(), "MVP"), 1, GL_FALSE, &mvp[0][0]);
+				
+				box.draw(sunShader);
+				shader.use(); // Restore
+			}
+			
+			
+			// Placeholders
+			if (t2Phase == T2_SCATTERED || t2Phase == T2_COMPLETED || t2Phase == T2_FAILED_WAIT)
+			{
+				// Draw small markers for slots
+				for (const auto& slot : t2Slots)
+				{
+					glm::mat4 model = glm::mat4(1.0f);
+					model = glm::translate(model, slot);
+					// Placeholders: Square base (1.0 x 1.0) to match cubes
+					model = glm::scale(model, glm::vec3(1.0f, 0.2f, 1.0f)); 
+					
+					glm::mat4 mvp = ProjectionMatrix * ViewMatrix * model;
+					glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &mvp[0][0]);
+					glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, tex); 
+					box.draw(shader);
+				}
+			}
+
+			// Cubes
+			if (t2Phase != T2_SHINY_CUBE)
+			{
+				for (auto& pc : puzzleCubes)
+				{
+					GLuint tID = tex;
+					if (pc.type == 0) tID = tex;  // Wood
+					if (pc.type == 1) tID = tex2; // Rock
+					if (pc.type == 2) tID = tex5; // metal
+					if (pc.type == 3) tID = tex4; // Orange2
+
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, tID);
+
+					glm::mat4 model = glm::mat4(1.0f);
+					model = glm::translate(model, pc.pos);
+					model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f)); 
+
+					glm::mat4 mvp = ProjectionMatrix * ViewMatrix * model; // Fixed identifier case
+
+					glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &mvp[0][0]);
+					glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
+
+					box.draw(shader);
+				}
+			}
+		}
 
 
 

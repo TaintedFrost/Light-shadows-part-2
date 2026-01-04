@@ -1,23 +1,13 @@
-﻿  camera.cpp
-  FileName.cpp
-  window.cpp
-  main.cpp
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(479,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(479,30): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(504,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(516,12): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(517,12): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(521,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(522,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(524,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(525,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\GameEngine\main.cpp(778,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-  meshLoaderObj.cpp
-  mesh.cpp
-  shader.cpp
-  texture.cpp
-  Generating Code...
-LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
-LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
-glew32s.lib(glew.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'glew32s.lib(glew.obj)' or at 'C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\Debug\vc120.pdb'; linking object as if no debug info
-  GameEngine.vcxproj -> C:\Users\Soby\Desktop\!!Agc Done\Light-shadows-part-2\Debug\GameEngine.exe
+﻿  main.cpp
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(498,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(669,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(669,30): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(694,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(706,12): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(707,12): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(711,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(712,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(714,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(715,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\GameEngine\main.cpp(1024,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  GameEngine.vcxproj -> E:\uni\an3sem1\EOCG\project_PART_2\Light-shadows-part-2\Debug\GameEngine.exe
