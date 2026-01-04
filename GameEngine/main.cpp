@@ -1,9 +1,10 @@
-#include "Graphics\window.h"
+﻿#include "Graphics\window.h"
 #include "Camera\camera.h"
 #include "Shaders\shader.h"
 #include "Model Loading\mesh.h"
 #include "Model Loading\texture.h"
 #include "Model Loading\meshLoaderObj.h"
+#include <time.h>
 
 void processKeyboardInput ();
 
@@ -24,6 +25,37 @@ float distance(glm::vec3 a, glm::vec3 b)
 {
 	return glm::length(a - b);
 }
+struct TreeCollider
+{
+	glm::vec3 center;
+	float radius;
+	float height;
+};
+// define a collision to block camera from moving through the trees
+
+std::vector<TreeCollider> treeColliders;
+
+bool checkTreeCollision(
+	const glm::vec3& newPos,
+	const std::vector<TreeCollider>& colliders
+)
+{
+	for (const auto& c : colliders)
+	{
+		// Horizontal distance only (XZ plane)
+		glm::vec2 p(newPos.x, newPos.z);
+		glm::vec2 t(c.center.x, c.center.z);
+
+		float dist = glm::length(p - t);
+		if (dist < c.radius)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
 
 //s1 vars
 int currentTask = 0;
@@ -269,6 +301,8 @@ struct WizardPart {
 	glm::vec3 scale;    // cube scale
 };
 
+
+
 std::vector<WizardPart> getWizardParts()
 {
 	std::vector<WizardPart> parts;
@@ -336,6 +370,7 @@ int main()
 	GLuint tex = loadBMP("Resources/Textures/wood.bmp");
 	GLuint tex2 = loadBMP("Resources/Textures/rock.bmp");
 	GLuint tex3 = loadBMP("Resources/Textures/orange.bmp");
+	GLuint tex_tree = loadBMP("Resources/Textures/TreeUVmap.bmp");
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -403,6 +438,12 @@ int main()
 	grassTextures[0].type = "texture_diffuse";
 
 
+	// tree texture 
+	std::vector<Texture> treeTextures;
+	treeTextures.push_back(Texture());
+	treeTextures[0].id = tex_tree;
+	treeTextures[0].type = "texture_diffuse";
+
 
 
 
@@ -419,12 +460,37 @@ int main()
 		120,     // width
 		120,     // depth
 		5.0f,    // scale
-		grassTextures // (we�ll swap this to grass)
+		grassTextures // (we’ll swap this to grass)
 	);
+
+	// tree
+	Mesh tree = loader.loadObj("Resources/Models/HorrorTree.obj",treeTextures);
 
 
 	//s1
 	Mesh sword = loader.loadObj("Resources/Models/cube.obj", textures);
+
+	// tree positions
+	std::vector<glm::vec3> treePositions;
+	for (int x = -300; x <= 300; x += 40)
+	{
+		for (int z = -300; z <= 300; z += 40)
+		{
+			float y = getGroundHeight(x, z);
+			treePositions.push_back(glm::vec3(x, y, z));
+		}
+	}
+
+
+	for (const auto& pos : treePositions)
+	{
+		TreeCollider c;
+		c.center = pos;
+		c.radius = 2.5f * 5.0f;   // scale * trunk radius
+		c.height = 20.0f * 5.0f; 
+
+		treeColliders.push_back(c);
+	}
 
 	//s1 task1 intro
 	std::cout << "Task 1: Approach the warlock and press E to attack." << std::endl;
@@ -434,6 +500,7 @@ int main()
 		glfwWindowShouldClose(window.getWindow()) == 0)
 	{
 		window.clear();
+
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
@@ -668,6 +735,23 @@ int main()
 		terrain.draw(shader);
 
 
+		// trees drawing
+		for (const auto& treePos : treePositions)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, treePos);
+			model = glm::scale(model, glm::vec3(5.0f));
+
+			MVP = ProjectionMatrix * ViewMatrix * model;
+
+			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
+			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
+
+			tree.draw(shader);
+		}
+
+
+
 
 		//s1 combat logic
 		float enemyBaseY = 0.0f;
@@ -693,6 +777,8 @@ int main()
 		}
 		enemyPos.y = enemyBaseY + sin(glfwGetTime()) * 2.0f;
 
+
+		
 		//s1 skybox load 
 		//!!!!!!
 		//glDepthFunc(GL_LEQUAL);
@@ -719,6 +805,7 @@ int main()
 		//glDepthMask(GL_TRUE);
 		//glDepthFunc(GL_LESS);
 
+
 		// ---------- SKYBOX (DRAW FIRST) ----------
 		glDepthMask(GL_FALSE);
 		glDepthFunc(GL_LEQUAL);
@@ -726,7 +813,7 @@ int main()
 
 		skyboxShader.use();
 
-		// REMOVE camera translation
+		// Use SAME camera matrices (no translation)
 		glm::mat4 view = glm::mat4(glm::mat3(
 			glm::lookAt(
 				camera.getCameraPosition(),
@@ -735,7 +822,6 @@ int main()
 			)
 		));
 
-		// IMPORTANT: radians
 		glm::mat4 proj = glm::perspective(
 			glm::radians(70.0f),
 			(float)window.getWidth() / window.getHeight(),
@@ -744,15 +830,19 @@ int main()
 		);
 
 		glm::mat4 VP = proj * view;
+
 		glUniformMatrix4fv(
 			glGetUniformLocation(skyboxShader.getId(), "VP"),
 			1, GL_FALSE, &VP[0][0]
 		);
 
 		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
+		// Restore state
 		glEnable(GL_CULL_FACE);
 		glDepthMask(GL_TRUE);
 		glDepthFunc(GL_LESS);
@@ -768,29 +858,55 @@ void processKeyboardInput()
 {
 	float cameraSpeed = 30 * deltaTime;
 
-	//translation
+	glm::vec3 oldPos = camera.getCameraPosition();
+
 	if (window.isPressed(GLFW_KEY_W))
-		//std::cout << "wwww" << std::endl;
+	{
 		camera.keyboardMoveFront(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_S))
+	{
 		camera.keyboardMoveBack(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_A))
-		//std::cout << "aaaaa" << std::endl;
+	{
 		camera.keyboardMoveLeft(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_D))
+	{
 		camera.keyboardMoveRight(cameraSpeed);
+		if (checkTreeCollision(camera.getCameraPosition(), treeColliders))
+			camera.setCameraPosition(oldPos);
+	}
+
 	if (window.isPressed(GLFW_KEY_R))
 		camera.keyboardMoveUp(cameraSpeed);
 	if (window.isPressed(GLFW_KEY_F))
 		camera.keyboardMoveDown(cameraSpeed);
 
-	//s2 jump
-	if (window.isPressed(GLFW_KEY_SPACE)) {
-		float groundY = getGroundHeight(camera.getCameraPosition().x, camera.getCameraPosition().z) + playerHeight;
-		if (camera.getCameraPosition().y <= groundY + 0.01f) {
-			verticalVelocity = 30.0f; // Jump strength
-		}
+	// Jump
+	if (window.isPressed(GLFW_KEY_SPACE))
+	{
+		float groundY =
+			getGroundHeight(
+				camera.getCameraPosition().x,
+				camera.getCameraPosition().z
+			) + playerHeight;
+
+		if (camera.getCameraPosition().y <= groundY + 0.01f)
+			verticalVelocity = 30.0f;
 	}
+}
+
 
 	//s1 disabled
 	////rotation
@@ -802,4 +918,3 @@ void processKeyboardInput()
 	//	camera.rotateOx(cameraSpeed);
 	//if (window.isPressed(GLFW_KEY_DOWN))
 	//	camera.rotateOx(-cameraSpeed);
-}
