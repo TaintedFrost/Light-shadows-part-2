@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{7DB4A041-6210-429F-8FF3-63462ADD6A69}|GameEngine\\GameEngine.vcxproj|C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\SimonSays.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7DB4A041-6210-429F-8FF3-63462ADD6A69}|GameEngine\\GameEngine.vcxproj|solutionrelative:GameEngine\\SimonSays.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7DB4A041-6210-429F-8FF3-63462ADD6A69}|GameEngine\\GameEngine.vcxproj|C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7DB4A041-6210-429F-8FF3-63462ADD6A69}|GameEngine\\GameEngine.vcxproj|solutionrelative:GameEngine\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7DB4A041-6210-429F-8FF3-63462ADD6A69}|GameEngine\\GameEngine.vcxproj|C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\SimonSays.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7DB4A041-6210-429F-8FF3-63462ADD6A69}|GameEngine\\GameEngine.vcxproj|solutionrelative:GameEngine\\SimonSays.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SimonSays.h",
+              "DocumentMoniker": "C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\SimonSays.h",
+              "RelativeDocumentMoniker": "GameEngine\\SimonSays.h",
+              "ToolTip": "C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\SimonSays.h",
+              "RelativeToolTip": "GameEngine\\SimonSays.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-01-04T18:26:09.096Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "main.cpp",
+              "DocumentMoniker": "C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\main.cpp",
+              "RelativeDocumentMoniker": "GameEngine\\main.cpp",
+              "ToolTip": "C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\main.cpp",
+              "RelativeToolTip": "GameEngine\\main.cpp",
+              "ViewState": "AgIAAB8EAAAAAAAAAAAqwB4EAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-01-04T17:12:25.432Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "SimonSays.cpp",
+              "DocumentMoniker": "C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\SimonSays.cpp",
+              "RelativeDocumentMoniker": "GameEngine\\SimonSays.cpp",
+              "ToolTip": "C:\\Users\\Soby\\Desktop\\!!!!AGC part2\\!!!DRAFTWORK\\Light-shadows-part-2\\GameEngine\\SimonSays.cpp",
+              "RelativeToolTip": "GameEngine\\SimonSays.cpp",
+              "ViewState": "AgIAAFQAAAAAAAAAAAAAAGoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-01-04T18:26:45.818Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+# Visual Studio
+.vs/
+Debug/
+Release/
+x64/
+*.user
+*.aps
+*.idb
+*.pdb
+*.ilk
+*.tlog
+*.ipch
+
+# Executables
+*.exe
