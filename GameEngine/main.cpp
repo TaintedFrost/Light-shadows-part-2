@@ -472,7 +472,7 @@ glm::vec3 spawnRandomCubeSafe(const std::vector<TreeCollider>& colliders, glm::v
 		glm::vec3 cand = center + glm::vec3(rx, 0.0f, rz);
 		cand.y = getGroundHeight(cand.x, cand.z) + 2.0f; // On ground
 
-		if (isSafeFromTrees(cand, 3.0f, colliders)) 
+		if (isSafeFromTrees(cand, 3.0f, colliders))
 		{
 			return cand;
 		}
@@ -720,7 +720,7 @@ int main()
 
 		camera.setCameraPosition(pos);
 
-		
+
 
 		//// Code for the light ////
 
@@ -886,10 +886,10 @@ int main()
 				currentTask = 1;
 				std::cout << "Task 1 complete!" << std::endl;
 				std::cout << "Task 2: Explore the arena." << std::endl;
-				
+
 				// TRIGGER TASK 2
 				t2Phase = T2_SHINY_CUBE;
-				shinyCubePos = enemyPos + glm::vec3(-25.0f, 0.0f, 0.0f); 
+				shinyCubePos = enemyPos + glm::vec3(-25.0f, 0.0f, 0.0f);
 				shinyCubePos.y = getGroundHeight(shinyCubePos.x, shinyCubePos.z) + 3.0f;
 			}
 			else {
@@ -913,37 +913,37 @@ int main()
 				std::cout << "Task 2 Started! Memorize the order!" << std::endl;
 				t2Phase = T2_SHOW_SAMPLE;
 				t2Timer = 5.0f;
-				t2BasePos = enemyPos + glm::vec3(-20.0f, 0.0f, 0.0f); 
-				
+				t2BasePos = enemyPos + glm::vec3(-20.0f, 0.0f, 0.0f);
+
 				t2Slots.clear();
 				puzzleCubes.clear();
 				t2TargetOrder.clear();
 				t2UserOrder.clear();
 
-				std::vector<int> types = { 0, 1, 2, 3 }; 
+				std::vector<int> types = { 0, 1, 2, 3 };
 				// Simple shuffle
 				for (int i = 0; i < 10; i++) {
 					int r1 = rand() % 4;
 					int r2 = rand() % 4;
 					std::swap(types[r1], types[r2]);
 				}
-				
+
 				t2TargetOrder = types;
 
 				// Align along Z axis
-				glm::vec3 right = glm::vec3(0.0f, 0.0f, 1.0f); 
-				
+				glm::vec3 right = glm::vec3(0.0f, 0.0f, 1.0f);
+
 				for (int i = 0; i < 4; i++)
 				{
 					PuzzleCube pc;
 					pc.type = types[i];
 					glm::vec3 slotPos = t2BasePos + right * ((i - 1.5f) * 6.5f);
 					slotPos.y = getGroundHeight(slotPos.x, slotPos.z) + 2.0f;
-					
+
 					pc.pos = slotPos;
 					pc.targetPos = slotPos; // original slot
 					pc.collected = false;
-					
+
 					puzzleCubes.push_back(pc);
 					t2Slots.push_back(slotPos);
 				}
@@ -977,22 +977,22 @@ int main()
 					{
 						pc.collected = true;
 						pc.pos = t2Slots[collectedCubesCount]; // Move to next available slot
-						
+
 						t2UserOrder.push_back(pc.type);
-						
+
 						collectedCubesCount++;
 						found = true;
 						std::cout << "Collected cube! " << collectedCubesCount << "/4" << std::endl;
 						break; // Collect one at a time
 					}
 				}
-				
+
 				if (collectedCubesCount >= 4)
 				{
 					// VERIFY ORDER
 					bool correct = true;
-					for(size_t i=0; i<4; ++i) {
-						if(t2UserOrder[i] != t2TargetOrder[i]) {
+					for (size_t i = 0; i < 4; ++i) {
+						if (t2UserOrder[i] != t2TargetOrder[i]) {
 							correct = false;
 							break;
 						}
@@ -1005,7 +1005,7 @@ int main()
 						currentTask = 2;
 						std::cout << "Task 3: Claim the Lunar Blade." << std::endl;
 					}
-					else 
+					else
 					{
 						std::cout << "Wrong Order! Resetting in 5 seconds..." << std::endl;
 						t2Phase = T2_FAILED_WAIT;
@@ -1034,7 +1034,7 @@ int main()
 		}
 
 		// TASK 2 RENDER
-		
+
 		if (t2Phase != T2_IDLE)
 		{
 			// Shiny Cube
@@ -1044,15 +1044,15 @@ int main()
 				glm::mat4 model = glm::mat4(1.0f);
 				model = glm::translate(model, shinyCubePos);
 				model = glm::scale(model, glm::vec3(1.5f));
-				
+
 				glm::mat4 mvp = ProjectionMatrix * ViewMatrix * model;
 				glUniformMatrix4fv(glGetUniformLocation(sunShader.getId(), "MVP"), 1, GL_FALSE, &mvp[0][0]);
-				
+
 				box.draw(sunShader);
 				shader.use(); // Restore
 			}
-			
-			
+
+
 			// Placeholders
 			if (t2Phase == T2_SCATTERED || t2Phase == T2_COMPLETED || t2Phase == T2_FAILED_WAIT)
 			{
@@ -1062,13 +1062,13 @@ int main()
 					glm::mat4 model = glm::mat4(1.0f);
 					model = glm::translate(model, slot);
 					// Placeholders: Square base (1.0 x 1.0) to match cubes
-					model = glm::scale(model, glm::vec3(1.0f, 0.2f, 1.0f)); 
-					
+					model = glm::scale(model, glm::vec3(1.0f, 0.2f, 1.0f));
+
 					glm::mat4 mvp = ProjectionMatrix * ViewMatrix * model;
 					glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &mvp[0][0]);
 					glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
 					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, tex); 
+					glBindTexture(GL_TEXTURE_2D, tex);
 					box.draw(shader);
 				}
 			}
@@ -1099,7 +1099,7 @@ int main()
 			//		box.draw(shader);
 			//	}
 			//}
-			
+
 			// Shapes (Task 2)
 			if (t2Phase != T2_SHINY_CUBE)
 			{
