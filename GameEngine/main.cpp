@@ -191,10 +191,33 @@ float verticalVelocity = 0.0f;
 float gravity = -40.0f;
 
 //s2 flat ground
+//float getGroundHeight(float x, float z)
+//{
+//	return 0.0f;
+//}
 float getGroundHeight(float x, float z)
 {
-	return 0.0f;
+	// Base flat ground
+	float height = 0.0f;
+
+	// ---- Lunar Blade Hill ----
+	glm::vec2 hillCenter(60.0f, -40.0f); // pedestalPos XZ
+	glm::vec2 p(x, z);
+
+	float dist = glm::distance(p, hillCenter);
+
+	float hillRadius = 40.0f;
+	float hillHeight = 20.0f;
+
+	if (dist < hillRadius)
+	{
+		float t = 1.0f - (dist / hillRadius);
+		height += t * t * hillHeight; // smooth hill
+	}
+
+	return height;
 }
+
 
 //s1 mesh hills
 Mesh generateTerrain(
@@ -594,9 +617,9 @@ int main()
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // RESTORE DEFAULT
 
 	//Textures LOAD !imp
-	GLuint tex = loadBMP("Resources/Textures/red.bmp");
-	GLuint tex2 = loadBMP("Resources/Textures/blue.bmp");
-	GLuint tex3 = loadBMP("Resources/Textures/yellow.bmp");
+	GLuint redTex = loadBMP("Resources/Textures/red.bmp");
+	GLuint blueTex = loadBMP("Resources/Textures/blue.bmp");
+	GLuint yellowTex = loadBMP("Resources/Textures/yellow.bmp");
 	GLuint tex_tree = loadBMP("Resources/Textures/TreeUVmap.bmp");
 	//Sword textures
 	GLuint bladeTex = loadBMP("Resources/Textures/swordBase.bmp");
@@ -610,6 +633,8 @@ int main()
 	GLuint wizSkinTex = loadBMP("Resources/Textures/wizard_skin.bmp");
 	GLuint wizHatTex = loadBMP("Resources/Textures/wizard_hat.bmp");
 	GLuint wizStaffTex = loadBMP("Resources/Textures/wizard_staff.bmp");
+
+	GLuint metalTex = loadBMP("Resources/Textures/metal.bmp");
 
 
 	glEnable(GL_DEPTH_TEST);
@@ -653,23 +678,23 @@ int main()
 
 	std::vector<Texture> textures;
 	textures.push_back(Texture());
-	textures[0].id = tex;
+	textures[0].id = redTex;
 	textures[0].type = "texture_diffuse";
 
 	std::vector<Texture> textures2;
 	textures2.push_back(Texture());
-	textures2[0].id = tex2;
+	textures2[0].id = blueTex;
 	textures2[0].type = "texture_diffuse";
 
 	std::vector<Texture> textures3;
 	textures3.push_back(Texture());
-	textures3[0].id = tex3;
+	textures3[0].id = yellowTex;
 	textures3[0].type = "texture_diffuse";
 
 	// s2 Orange2 (Requested texture)
-	GLuint tex4 = loadBMP("Resources/Textures/yellow.bmp");
+	GLuint yellowTex2 = loadBMP("Resources/Textures/yellow.bmp");
 	// metal
-	GLuint tex5 = loadBMP("Resources/Textures/green.bmp");
+	GLuint greenTex = loadBMP("Resources/Textures/green.bmp");
 	//s2 grass texture
 	GLuint grassTex = loadBMP("Resources/Textures/grass.bmp");
 
@@ -760,7 +785,9 @@ int main()
 		glfwWindowShouldClose(window.getWindow()) == 0)
 	{
 		window.clear();
-		
+		//s5
+		pedestalPos.y = getGroundHeight(pedestalPos.x, pedestalPos.z);
+
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
@@ -1191,7 +1218,7 @@ int main()
 					glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &mvp[0][0]);
 					glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
 					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, tex);
+					glBindTexture(GL_TEXTURE_2D, redTex);
 					box.draw(shader);
 				}
 			}
@@ -1229,11 +1256,11 @@ int main()
 				for (auto& pc : puzzleCubes)
 				{
 					// ----- Texture -----
-					GLuint tID = tex;
-					if (pc.type == 0) tID = tex;   // Wood
-					if (pc.type == 1) tID = tex2;  // Rock
-					if (pc.type == 2) tID = tex5;  // Metal
-					if (pc.type == 3) tID = tex4;  // Orange
+					GLuint tID = redTex;
+					if (pc.type == 0) tID = redTex;   // Wood
+					if (pc.type == 1) tID = blueTex;  // Rock
+					if (pc.type == 2) tID = greenTex;  // Metal
+					if (pc.type == 3) tID = yellowTex2;  // Orange
 
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, tID);
@@ -1265,6 +1292,25 @@ int main()
 		//task3 logic
 		if (currentTask == 2 && !swordCollected)
 		{
+			// ----- Stone Pedestal -----
+			glm::mat4 pedestalModel = glm::mat4(1.0f);
+			pedestalModel = glm::translate(
+				pedestalModel,
+				pedestalPos + glm::vec3(0.0f, 4.0f, 0.0f)
+			);
+			pedestalModel = glm::scale(pedestalModel, glm::vec3(6.0f, 4.0f, 6.0f));
+
+			glm::mat4 pedestalMVP = ProjectionMatrix * ViewMatrix * pedestalModel;
+
+			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &pedestalMVP[0][0]);
+			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &pedestalModel[0][0]);
+
+			glBindTexture(GL_TEXTURE_2D, metalTex); // metal/stone texture
+			box.draw(shader);
+
+
+
+
 			swordHoverTime += deltaTime;
 
 			float distToSword = distance(
@@ -1444,9 +1490,60 @@ int main()
 		// ================= TASK 3 RENDER (QUEST SWORD) =================
 		if (currentTask == 2 && !swordCollected)
 		{
-			float hoverY = sin(swordHoverTime * 2.0f) * 2.0f;
+			//s5 Stone Pedestal
+			//glm::mat4 pedestalModel = glm::mat4(1.0f);
+			//pedestalModel = glm::translate(
+			//	pedestalModel,
+			//	pedestalPos + glm::vec3(0.0f, 4.0f, 0.0f)
+			//);
+			//pedestalModel = glm::scale(pedestalModel, glm::vec3(6.0f, 4.0f, 6.0f));
+
+			//glm::mat4 pedestalMVP = ProjectionMatrix * ViewMatrix * pedestalModel;
+
+			//glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &pedestalMVP[0][0]);
+			//glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &pedestalModel[0][0]);
+
+			//glBindTexture(GL_TEXTURE_2D, tex5); // metal/stone texture
+			//box.draw(shader);
+
+			
+
+			//float hoverY = sin(swordHoverTime * 2.0f) * 2.0f;
+			float hover = sin(swordHoverTime * 2.5f) * 1.2f;
+			float spin = glfwGetTime() * 45.0f;
+
 
 			glm::mat4 baseModel = glm::mat4(1.0f);
+			baseModel = glm::translate(
+				baseModel,
+				pedestalPos + glm::vec3(0.0f, 10.0f + hover, 0.0f)
+			);
+
+			baseModel = glm::rotate(
+				baseModel,
+				glm::radians(spin),
+				glm::vec3(0.0f, 1.0f, 0.0f)
+			);
+
+			baseModel = glm::rotate(
+				baseModel,
+				glm::radians(90.0f),
+				glm::vec3(1.0f, 0.0f, 0.0f)
+			);
+			float tiltSpin = sin(glfwGetTime() * 1.5f) * 150.0f;
+
+			baseModel = glm::rotate(
+				baseModel,
+				glm::radians(tiltSpin),
+				glm::vec3(0.0f, 0.0f, 1.0f)
+			);
+
+
+			baseModel = glm::scale(baseModel, glm::vec3(0.6f));
+
+
+
+			/*glm::mat4 baseModel = glm::mat4(1.0f);
 			baseModel = glm::translate(
 				baseModel,
 				pedestalPos + glm::vec3(0.0f, 8.0f + hoverY, 0.0f)
@@ -1458,7 +1555,7 @@ int main()
 			);
 
 
-			baseModel = glm::scale(baseModel, glm::vec3(0.6f));
+			baseModel = glm::scale(baseModel, glm::vec3(0.6f));*/
 
 			auto swordParts = getSwordParts(
 				bladeTex, guardTex, handleTex, pommelTex
@@ -1530,7 +1627,7 @@ int main()
 				glUniform3f(glGetUniformLocation(shader.getId(), "viewPos"), 0, 0, 10);
 
 				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, tex); // Metal
+				glBindTexture(GL_TEXTURE_2D, redTex); // Metal
 				box.draw(shader);
 
 				// --- 2. Safe Zone (Green) ---
@@ -1543,7 +1640,7 @@ int main()
 				glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]); // Update model for lighting
 
 				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, tex5); // Green
+				glBindTexture(GL_TEXTURE_2D, greenTex); // Green
 				box.draw(shader);
 
 				// --- 3. Moving Line (White) ---
@@ -1634,7 +1731,7 @@ int main()
 				glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
 				glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
 				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, tex); // Red Heart
+				glBindTexture(GL_TEXTURE_2D, redTex); // Red Heart
 				box.draw(shader);
 			}
 
@@ -1648,7 +1745,7 @@ int main()
 					glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
 					glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
 					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, tex); // Metal/Grey Bar
+					glBindTexture(GL_TEXTURE_2D, redTex); // Metal/Grey Bar
 					box.draw(shader);
 				}
 			}
@@ -1677,7 +1774,7 @@ int main()
 			shader, box,
 			glm::vec2(-0.8f, 0.85f),
 			glm::vec2(0.35f, 0.08f),
-			tex5, // metal background
+			greenTex, // metal background
 			orthoUI
 		);
 
@@ -1696,7 +1793,7 @@ int main()
 				shader, box,
 				glm::vec2(-0.9f + i * 0.1f, -0.9f),
 				glm::vec2(0.06f, 0.06f),
-				tex3, // red/orange
+				redTex, // red/orange
 				orthoUI
 			);
 		}
