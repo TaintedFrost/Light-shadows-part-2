@@ -14,7 +14,7 @@ void processKeyboardInput();
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
-Window window("Game Engine", 1000, 900);
+Window window("Game Engine", 1620, 980);
 
 Camera camera;
 
