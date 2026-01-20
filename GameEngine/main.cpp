@@ -5,6 +5,7 @@
 #include "Model Loading\texture.h"
 #include "Model Loading\meshLoaderObj.h"
 #include <time.h>
+#include <cmath>
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
@@ -18,6 +19,7 @@ Window window("Game Engine", 1000, 900);
 
 glm::vec3 princessPos = glm::vec3(0.0f, 40.0f, 90.0f);
 bool princessVisible = true;
+bool debugPrincessBox = false;
 Camera camera;
 
 glm::vec3 lightColor = glm::vec3(1.0f);
@@ -1003,10 +1005,10 @@ int main()
 		glm::vec3(-280.0f, 147.0f, -140.0f),
 		glm::vec3(-160.0f, 133.0f, -320.0f),
 		glm::vec3(40.0f, 142.0f, 440.0f),
-		glm::vec3(-42.0f, 140.0f, -70.0f),
-		glm::vec3(-28.0f, 146.0f, -50.0f),
-		glm::vec3(-50.0f, 138.0f, -85.0f),
-		glm::vec3(-22.0f, 144.0f, -64.0f),
+		glm::vec3(-150.0f, 144.0f, -10.0f),
+		glm::vec3(140.0f, 147.0f, -180.0f),
+		glm::vec3(-120.0f, 143.0f, -220.0f),
+		glm::vec3(180.0f, 150.0f, -40.0f),
 		glm::vec3(-35.0f, 142.0f, -42.0f),
 		glm::vec3(140.0f, 151.0f, 420.0f),
 		glm::vec3(260.0f, 138.0f, -380.0f),
@@ -1022,10 +1024,10 @@ int main()
 		glm::vec3(-320.0f, 152.0f, -180.0f),
 		glm::vec3(-180.0f, 139.0f, -380.0f),
 		glm::vec3(60.0f, 146.0f, 520.0f),
-		glm::vec3(40.0f, 146.0f, -60.0f),
-		glm::vec3(80.0f, 149.0f, -110.0f),
-		glm::vec3(20.0f, 143.0f, -130.0f),
-		glm::vec3(100.0f, 150.0f, -85.0f),
+		glm::vec3(-90.0f, 142.0f, 90.0f),
+		glm::vec3(90.0f, 148.0f, 140.0f),
+		glm::vec3(-200.0f, 145.0f, 140.0f),
+		glm::vec3(200.0f, 149.0f, 80.0f),
 		glm::vec3(-520.0f, 138.0f, -420.0f),
 		glm::vec3(-440.0f, 152.0f, 420.0f),
 		glm::vec3(-320.0f, 134.0f, -560.0f),
@@ -1574,7 +1576,14 @@ int main()
 		for (size_t i = 0; i < cloudPositions.size(); i++)
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cloudPositions[i]);
+			float t = (float)glfwGetTime();
+			float phaseX = std::fmod(t * 0.05f + (float)i * 0.11f, 1.0f);
+			float phaseZ = std::fmod(t * 0.045f + (float)i * 0.09f, 1.0f);
+			float triX = (phaseX < 0.5f) ? (phaseX * 2.0f) : (2.0f - phaseX * 2.0f);
+			float triZ = (phaseZ < 0.5f) ? (phaseZ * 2.0f) : (2.0f - phaseZ * 2.0f);
+			float driftX = (triX * 2.0f - 1.0f) * 12.0f;
+			float driftZ = (triZ * 2.0f - 1.0f) * 10.0f;
+			model = glm::translate(model, cloudPositions[i] + glm::vec3(driftX, 0.0f, driftZ));
 			model = glm::scale(model, cloudScales[i]);
 
 			glm::mat4 MVPc = ProjectionMatrix * ViewMatrix * model;
@@ -1584,15 +1593,29 @@ int main()
 			cloudMesh.draw(shader);
 		}
 
-		// ===== Princess in world (story or post-victory) =====
-		if (princessVisible && (isStoryActive || t5GameWon))
+		// ===== Princess in world (intro or post-victory) =====
+		if (princessVisible && (currentTask == 0 || t5GameWon) && !isEndingActive)
 		{
 			princessPos.y = getGroundHeight(princessPos.x, princessPos.z);
 
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, princessPos);
-			model = glm::scale(model, glm::vec3(2.5f));
-			model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 1, 0));
+			float t = (float)glfwGetTime();
+			if (currentTask == 0 && isStoryActive)
+			{
+				float shake = sin(t * 12.0f) * 0.12f;
+				float tilt = sin(t * 14.0f) * 3.0f;
+				model = glm::translate(model, princessPos + glm::vec3(shake, 0.0f, 0.0f));
+				model = glm::scale(model, glm::vec3(2.5f));
+				model = glm::rotate(model, glm::radians(180.0f + tilt), glm::vec3(0, 1, 0));
+			}
+			else
+			{
+				float bob = (sin(t * 2.0f) * 0.5f + 0.5f) * 0.8f;
+				float sway = sin(t * 1.5f) * 6.0f;
+				model = glm::translate(model, princessPos + glm::vec3(0.0f, bob, 0.0f));
+				model = glm::scale(model, glm::vec3(2.5f));
+				model = glm::rotate(model, glm::radians(180.0f + sway), glm::vec3(0, 1, 0));
+			}
 
 			glm::mat4 MVPp = ProjectionMatrix * ViewMatrix * model;
 
@@ -2658,45 +2681,22 @@ int main()
 		// ===== STORY TELLING UI =====
 		if (isStoryActive)
 		{
-			// Render Princess
-			// Move to EYE LEVEL to be 100% sure she is visible.
-			// Camera is at (0, 50, 100).
-			// We place her at (0, 40, 90).
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, princessPos);
-			model = glm::scale(model, glm::vec3(2.0f));
-			// Rotate to face player (Player at +Z looking -Z)
-			model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 1, 0));
-
-			glm::mat4 MVP = ProjectionMatrix * ViewMatrix * model;
-			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
-			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &model[0][0]);
-
-			// Force texture
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, wizRobeTex);
-			for (auto& princessMesh : princessMeshes)
+			if (debugPrincessBox)
 			{
-				princessMesh.draw(shader);
+				// --- DEBUG BOX ---
+				// If you see this box but not the princess, the princess mesh is broken.
+				glm::mat4 boxModel = glm::mat4(1.0f);
+				boxModel = glm::translate(boxModel, glm::vec3(6.0f, 40.0f, 90.0f)); // To the right
+				boxModel = glm::scale(boxModel, glm::vec3(2.0f));
+
+				MVP = ProjectionMatrix * ViewMatrix * boxModel;
+				glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
+				glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &boxModel[0][0]);
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, grassTex); // Bright Green Box
+				box.draw(shader);
 			}
-
-			glEnable(GL_CULL_FACE);
-			// ---------------------------------------------------------
-
-
-			// --- DEBUG BOX ---
-			// If you see this box but not the princess, the princess mesh is broken.
-			glm::mat4 boxModel = glm::mat4(1.0f);
-			boxModel = glm::translate(boxModel, glm::vec3(6.0f, 40.0f, 90.0f)); // To the right
-			boxModel = glm::scale(boxModel, glm::vec3(2.0f));
-
-			MVP = ProjectionMatrix * ViewMatrix * boxModel;
-			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
-			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &boxModel[0][0]);
-
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, grassTex); // Bright Green Box
-			box.draw(shader);
 
 
 			// Check E input to skip
@@ -2736,11 +2736,25 @@ int main()
 		// ===== ENDING STORY UI =====
 		if (isEndingActive)
 		{
-			// Render Princess
+			// Render Princess at her current world position (no giant sky version)
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 40.0f, 90.0f));
-			model = glm::scale(model, glm::vec3(15.0f));
-			model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 1, 0));
+			float t = (float)glfwGetTime();
+			if (currentTask == 0 && isStoryActive)
+			{
+				float shake = sin(t * 12.0f) * 0.12f;
+				float tilt = sin(t * 14.0f) * 3.0f;
+				model = glm::translate(model, princessPos + glm::vec3(shake, 0.0f, 0.0f));
+				model = glm::scale(model, glm::vec3(2.5f));
+				model = glm::rotate(model, glm::radians(180.0f + tilt), glm::vec3(0, 1, 0));
+			}
+			else
+			{
+				float bob = (sin(t * 2.0f) * 0.5f + 0.5f) * 0.8f;
+				float sway = sin(t * 1.5f) * 6.0f;
+				model = glm::translate(model, princessPos + glm::vec3(0.0f, bob, 0.0f));
+				model = glm::scale(model, glm::vec3(2.5f));
+				model = glm::rotate(model, glm::radians(180.0f + sway), glm::vec3(0, 1, 0));
+			}
 
 			glm::mat4 MVP = ProjectionMatrix * ViewMatrix * model;
 			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
@@ -2751,18 +2765,6 @@ int main()
 			{
 				princessMesh.draw(shader);
 			}
-
-			// Debug Box
-			glm::mat4 boxModel = glm::mat4(1.0f);
-			boxModel = glm::translate(boxModel, glm::vec3(6.0f, 40.0f, 90.0f));
-			boxModel = glm::scale(boxModel, glm::vec3(2.0f));
-			MVP = ProjectionMatrix * ViewMatrix * boxModel;
-			glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
-			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &boxModel[0][0]);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, grassTex);
-			box.draw(shader);
-
 
 			// Check E input
 			bool ePressed = window.isPressed(GLFW_KEY_E);
