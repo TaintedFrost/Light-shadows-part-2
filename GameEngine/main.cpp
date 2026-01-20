@@ -1476,7 +1476,7 @@ int main()
 		swordModel = glm::translate(swordModel, camera.getCameraPosition());
 
 		// Rotate with camera
-		swordModel *= glm::mat4(glm::mat3(ViewMatrix)); // remove translation
+		swordModel *= glm::mat4(glm::mat3(glm::inverse(ViewMatrix))); // apply camera rotation
 
 		// Offset relative to player
 		swordModel = glm::translate(swordModel, swordOffset);
@@ -1516,17 +1516,6 @@ int main()
 		}
 
 
-
-		///// Test Obj files for box ////
-		ModelMatrix = glm::mat4(1.0);
-		ModelMatrix = glm::translate(ModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
-		MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-		glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-		glUniform3f(glGetUniformLocation(shader.getId(), "lightColor"), activeLightColor.x, activeLightColor.y, activeLightColor.z);
-		glUniform3f(glGetUniformLocation(shader.getId(), "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-		glUniform3f(glGetUniformLocation(shader.getId(), "viewPos"), camera.getCameraPosition().x, camera.getCameraPosition().y, camera.getCameraPosition().z);
-		box.draw(shader);
 
 		//make wiz task1
 		auto wizardParts = getWizardParts(
