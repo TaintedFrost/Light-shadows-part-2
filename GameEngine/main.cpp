@@ -221,6 +221,7 @@ bool t5IsAttacking = true; // true = 10s attack, false = 5s rest
 float t5ShootCooldown = 0.0f;
 bool t5GameWon = false;
 bool t5GameOver = false;
+float t5DamageFlashTimer = 0.0f; // New variable for red flash logic
 
 // STORY VARS
 struct StoryLine {
@@ -1301,6 +1302,23 @@ int main()
 		{
 			processKeyboardInput();
 		}
+		
+		// Update flash timer
+		if (t5DamageFlashTimer > 0.0f)
+		{
+			t5DamageFlashTimer -= deltaTime;
+			if (t5DamageFlashTimer < 0.0f) t5DamageFlashTimer = 0.0f;
+		}
+
+		// Calculate Active Light Color (Reddish if hurt)
+		glm::vec3 activeLightColor = lightColor;
+		if (t5DamageFlashTimer > 0.0f)
+		{
+			// Blend towards red (1, 0, 0)
+			// Intensity based on timer (fade out)
+			float factor = glm::clamp(t5DamageFlashTimer * 2.0f, 0.0f, 0.8f); // 0.8 max intensity
+			activeLightColor = glm::mix(lightColor, glm::vec3(1.0f, 0.0f, 0.0f), factor);
+		}
 
 		//s1 read mouise
 		double xpos, ypos;
@@ -1352,6 +1370,72 @@ int main()
 		camera.setCameraPosition(pos);
 
 
+
+		// ---------- SKYBOX (DRAW FIRST) ----------
+		glDepthMask(GL_FALSE);
+		glDepthFunc(GL_LEQUAL);
+		glDisable(GL_CULL_FACE);
+
+		skyboxShader.use();
+
+		// Use SAME camera matrices (no translation)
+		glm::mat4 view = glm::mat4(glm::mat3(
+			glm::lookAt(
+				camera.getCameraPosition(),
+				camera.getCameraPosition() + camera.getCameraViewDirection(),
+				camera.getCameraUp()
+			)
+		));
+
+		glm::mat4 proj = glm::perspective(
+			glm::radians(70.0f),
+			(float)window.getWidth() / window.getHeight(),
+			0.1f,
+			1000.0f
+		);
+
+		glm::mat4 VP = proj * view;
+
+		if (t5GameWon)
+		{
+			// Sky animation: Rotate the view matrix for the skybox
+			float skySpeed = 5.0f; // Rotation speed
+			float angle = glm::radians((float)glfwGetTime() * skySpeed);
+			// Apply rotation to the view component of VP implies rotating the skybox relative to camera
+			// We can just rotate the view matrix before multiplying
+			view = glm::rotate(view, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			VP = proj * view;
+		}
+
+		glUniformMatrix4fv(
+			glGetUniformLocation(skyboxShader.getId(), "VP"),
+			1, GL_FALSE, &VP[0][0]
+		);
+
+		if (!t5GameWon)
+		{
+			// Creepy Dark Sky
+			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "bottomColor"), 0.1f, 0.0f, 0.0f);
+			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "topColor"), 0.05f, 0.05f, 0.15f);
+		}
+		else
+		{
+			// Happy Blue Sky
+			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "bottomColor"), 0.6f, 0.8f, 1.0f);
+			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "topColor"), 0.2f, 0.4f, 0.8f);
+		}
+
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+
+		// Restore state
+		glEnable(GL_CULL_FACE);
+		glDepthMask(GL_TRUE);
+		glDepthFunc(GL_LESS);
+		// ---------- END SKYBOX ----------
 
 		//// Code for the light ////
 
@@ -1437,7 +1521,7 @@ int main()
 		MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 		glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
 		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-		glUniform3f(glGetUniformLocation(shader.getId(), "lightColor"), lightColor.x, lightColor.y, lightColor.z);
+		glUniform3f(glGetUniformLocation(shader.getId(), "lightColor"), activeLightColor.x, activeLightColor.y, activeLightColor.z);
 		glUniform3f(glGetUniformLocation(shader.getId(), "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 		glUniform3f(glGetUniformLocation(shader.getId(), "viewPos"), camera.getCameraPosition().x, camera.getCameraPosition().y, camera.getCameraPosition().z);
 		box.draw(shader);
@@ -2113,6 +2197,7 @@ int main()
 					{
 						p.active = false;
 						t5PlayerLives--;
+						t5DamageFlashTimer = 0.5f; // Trigger 0.5s red flash
 						std::cout << "HIT! Lives left: " << t5PlayerLives << std::endl;
 						if (t5PlayerLives <= 0)
 						{
@@ -2384,6 +2469,7 @@ int main()
 			shader.use();
 			glUniform3f(glGetUniformLocation(shader.getId(), "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 			glUniform3f(glGetUniformLocation(shader.getId(), "viewPos"), camera.getCameraPosition().x, camera.getCameraPosition().y, camera.getCameraPosition().z);
+			glUniform3f(glGetUniformLocation(shader.getId(), "lightColor"), activeLightColor.x, activeLightColor.y, activeLightColor.z); // Ensure projectiles also get tinted
 
 			for (const auto& p : t5Projectiles)
 			{
@@ -2451,6 +2537,7 @@ int main()
 			shader.use();
 			glUniform3f(glGetUniformLocation(shader.getId(), "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 			glUniform3f(glGetUniformLocation(shader.getId(), "viewPos"), camera.getCameraPosition().x, camera.getCameraPosition().y, camera.getCameraPosition().z);
+			glUniform3f(glGetUniformLocation(shader.getId(), "lightColor"), activeLightColor.x, activeLightColor.y, activeLightColor.z);
 		}
 
 		//s4 ui
@@ -2505,74 +2592,14 @@ int main()
 			camera.getCameraPosition().y,
 			camera.getCameraPosition().z
 		);
-
-
-
-		// ---------- SKYBOX (DRAW FIRST) ----------
-		glDepthMask(GL_FALSE);
-		glDepthFunc(GL_LEQUAL);
-		glDisable(GL_CULL_FACE);
-
-		skyboxShader.use();
-
-		// Use SAME camera matrices (no translation)
-		glm::mat4 view = glm::mat4(glm::mat3(
-			glm::lookAt(
-				camera.getCameraPosition(),
-				camera.getCameraPosition() + camera.getCameraViewDirection(),
-				camera.getCameraUp()
-			)
-		));
-
-		glm::mat4 proj = glm::perspective(
-			glm::radians(70.0f),
-			(float)window.getWidth() / window.getHeight(),
-			0.1f,
-			1000.0f
+		glUniform3f(
+			glGetUniformLocation(shader.getId(), "lightColor"),
+			activeLightColor.x, activeLightColor.y, activeLightColor.z
 		);
 
-		glm::mat4 VP = proj * view;
 
-		if (t5GameWon)
-		{
-			// Sky animation: Rotate the view matrix for the skybox
-			float skySpeed = 5.0f; // Rotation speed
-			float angle = glm::radians((float)glfwGetTime() * skySpeed);
-			// Apply rotation to the view component of VP implies rotating the skybox relative to camera
-			// We can just rotate the view matrix before multiplying
-			view = glm::rotate(view, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			VP = proj * view;
-		}
 
-		glUniformMatrix4fv(
-			glGetUniformLocation(skyboxShader.getId(), "VP"),
-			1, GL_FALSE, &VP[0][0]
-		);
 
-		if (!t5GameWon)
-		{
-			// Creepy Dark Sky
-			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "bottomColor"), 0.1f, 0.0f, 0.0f);
-			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "topColor"), 0.05f, 0.05f, 0.15f);
-		}
-		else
-		{
-			// Happy Blue Sky
-			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "bottomColor"), 0.6f, 0.8f, 1.0f);
-			glUniform3f(glGetUniformLocation(skyboxShader.getId(), "topColor"), 0.2f, 0.4f, 0.8f);
-		}
-
-		glBindVertexArray(skyboxVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
-
-		// Restore state
-		glEnable(GL_CULL_FACE);
-		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LESS);
-		// ---------- END SKYBOX ----------
 
 
 
