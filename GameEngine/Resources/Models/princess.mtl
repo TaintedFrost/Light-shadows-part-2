@@ -1,0 +1,42 @@
+# Blender 5.0.1 MTL File: 'None'
+# www.blender.org
+
+newmtl 02_-_Default
+Ns 20.000006
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd ../textures/red.bmp
+
+newmtl 03_-_Default
+Ns 159.999985
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd ../textures/princessSkin.bmp
+map_d ../textures/princessSkin.bmp
+
+newmtl 07_-_Default
+Ns 490.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd ../textures/princessCrown.bmp
+map_d ../textures/princessCrown.bmp
+
+newmtl 08_-_Default
+Ns 20.000006
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd ../textures/princessHair.bmp
+map_d ../textures/princessHair.bmp

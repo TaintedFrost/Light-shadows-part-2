@@ -1,0 +1,14 @@
+# Simple square-based pyramid
+# Vertices
+v -0.5 0.0 -0.5
+v 0.5 0.0 -0.5
+v 0.5 0.0 0.5
+v -0.5 0.0 0.5
+v 0.0 1.0 0.0
+
+# Faces
+f 1 2 3 4   # Base
+f 1 2 5     # Side 1
+f 2 3 5     # Side 2
+f 3 4 5     # Side 3
+f 4 1 5     # Side 4

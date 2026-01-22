@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# Build output
+Debug/
+Release/
+*.exe
+*.tlog
+*.log
+
+# Missing VS rules
+x64/
+x86/
+*.ipch
+*.ap
+*.pdb
+*.ilk
+*.idb
+imgui.ini
